@@ -13,6 +13,7 @@
 @property (weak, nonatomic) IBOutlet UIButton *send;
 @property (weak, nonatomic) IBOutlet UITextView *console;
 @property (weak, nonatomic) IBOutlet UIButton *disconnect;
+@property (weak, nonatomic) IBOutlet UILabel *status;
 
 @end
 
@@ -41,11 +42,11 @@ static NSString* const KCharacteristicWriteableUUID = @"828EE34B-7521-4A38-AA32-
     {
         case CBCentralManagerStatePoweredOn:
             [self.manager scanForPeripheralsWithServices:@[[CBUUID UUIDWithString:KServiceUUID]] options:@{CBCentralManagerScanOptionAllowDuplicatesKey : @YES}];
-            self.console.text = [NSString stringWithFormat:@"%@\n%@", self.console.text, @"Scanning for peripherals..."];
+            //self.console.text = [NSString stringWithFormat:@"%@\n%@", self.console.text, @"Scanning for peripherals..."];
             NSLog(@"Scanning for peripherals...");
             break;
         default:
-            self.console.text = [NSString stringWithFormat:@"%@\n%@", self.console.text, @"Bluetooth LE is unsupported!"];
+            //self.console.text = [NSString stringWithFormat:@"%@\n%@", self.console.text, @"Bluetooth LE is unsupported!"];
             NSLog(@"Bluetooth LE is unsupported.");
             break;
     }
@@ -54,20 +55,34 @@ static NSString* const KCharacteristicWriteableUUID = @"828EE34B-7521-4A38-AA32-
 - (IBAction)sendClicked:(id)sender
 {
     NSData *data = [self.message.text dataUsingEncoding:NSUTF8StringEncoding];
-    [self.peripheral writeValue:data forCharacteristic:self.writebackCharacteristic type:CBCharacteristicWriteWithoutResponse];
-    self.console.text = [NSString stringWithFormat:@"%@\n%@ %@", self.console.text, @"Sent data:", self.message.text];
+    [self.peripheral writeValue:data forCharacteristic:self.writebackCharacteristic type:CBCharacteristicWriteWithResponse];
+    self.console.text = [NSString stringWithFormat:@"%@\n%@ %@", self.console.text, @"[Out]:", self.message.text];
     NSLog(@"Okay! I sent some data!");
     self.message.text = @"";
-    [self.view endEditing:YES];
+    //[self.view endEditing:YES];
     
 
 }
 
 - (IBAction)disconnectClicked:(id)sender
 {
-    [self.manager cancelPeripheralConnection:self.peripheral];
-    self.console.text = [NSString stringWithFormat:@"%@\n%@", self.console.text, @"Disconnected from Peripheral."];
-    [self.disconnect setEnabled:NO];
+    if([self.disconnect.titleLabel.text isEqualToString:@"Disconnect"])
+    {
+        [self.manager cancelPeripheralConnection:self.peripheral];
+        //self.console.text = [NSString stringWithFormat:@"%@\n%@", self.console.text, @"Disconnected from Peripheral."];
+        self.console.text = @"";
+        [self.disconnect setTitle:@"Scan for Peripherals" forState:UIControlStateNormal];
+        self.disconnect.backgroundColor = [UIColor greenColor];
+        [self.status setText:@"Not Connected"];
+    }
+    else
+    {
+        [self.manager scanForPeripheralsWithServices:@[[CBUUID UUIDWithString:KServiceUUID]] options:@{CBCentralManagerScanOptionAllowDuplicatesKey : @YES}];
+        [self.disconnect setTitle:@"Disconnect" forState:UIControlStateNormal];
+        self.disconnect.backgroundColor = [UIColor redColor];
+        [self.status setText:@"Scanning for Peripherals..."];
+    }
+    
     
 }
 
@@ -75,20 +90,20 @@ static NSString* const KCharacteristicWriteableUUID = @"828EE34B-7521-4A38-AA32-
 {
     if(error)
     {
-        self.console.text = [NSString stringWithFormat:@"%@\n%@ %@", self.console.text, @"Error writing to characteristic:", [error localizedDescription]];
+        //self.console.text = [NSString stringWithFormat:@"%@\n%@ %@", self.console.text, @"Error writing to characteristic:", [error localizedDescription]];
         NSLog(@"Error writing to characteristic: %@ (code %d)", [error localizedDescription], [error code]);
     }
 }
 
 - (void)centralManager:(CBCentralManager*)central didDiscoverPeripheral:(CBPeripheral *)peripheral advertisementData:(NSDictionary *)advertisementData RSSI:(NSNumber *)RSSI
 {
-    self.console.text = [NSString stringWithFormat:@"%@\n%@", self.console.text, @"Found peripheral! Stopping scan."];
+    //self.console.text = [NSString stringWithFormat:@"%@\n%@", self.console.text, @"Found peripheral! Stopping scan."];
     [self.manager stopScan];
     
     if(self.peripheral != peripheral)
     {
         self.peripheral = peripheral;
-        self.console.text = [NSString stringWithFormat:@"%@\n%@ %@", self.console.text, @"Connecting to peripheral: ", peripheral];
+        //self.console.text = [NSString stringWithFormat:@"%@\n%@ %@", self.console.text, @"Connecting to peripheral: ", peripheral];
         NSLog(@"Connecting to peripheral %@", peripheral);
     [   self.manager connectPeripheral:peripheral options:nil];
     }
@@ -98,16 +113,17 @@ static NSString* const KCharacteristicWriteableUUID = @"828EE34B-7521-4A38-AA32-
 {
     [self.data setLength:0];
     [self.peripheral setDelegate:self];
-    self.console.text = [NSString stringWithFormat:@"%@\n%@", self.console.text, @"Connected!"];
+    //self.console.text = [NSString stringWithFormat:@"%@\n%@", self.console.text, @"Connected!"];
     [self.peripheral discoverServices:@[[CBUUID UUIDWithString:KServiceUUID]]];
     [self.disconnect setEnabled:YES];
+    self.status.text = [NSString stringWithFormat:@"Connected to %@", [peripheral.identifier UUIDString]];
 }
 
 - (void)peripheral:(CBPeripheral *)peripheral didDiscoverServices:(NSError *)error
 {
     if(error)
     {
-        self.console.text = [NSString stringWithFormat:@"%@\n%@ %@", self.console.text, @"Error discovering service: ", [error localizedDescription]];
+        //self.console.text = [NSString stringWithFormat:@"%@\n%@ %@", self.console.text, @"Error discovering service: ", [error localizedDescription]];
         NSLog(@"Error discovering service: %@", [error localizedDescription]);
         //[self cleanup];
         return;
@@ -115,7 +131,7 @@ static NSString* const KCharacteristicWriteableUUID = @"828EE34B-7521-4A38-AA32-
     
     for(CBService *service in peripheral.services)
     {
-        self.console.text = [NSString stringWithFormat:@"%@\n%@ %@", self.console.text, @"Found service with UUID: ", service.UUID];
+        //self.console.text = [NSString stringWithFormat:@"%@\n%@ %@", self.console.text, @"Found service with UUID: ", service.UUID];
         NSLog(@"Found service with UUID: %@", service.UUID);
         if([service.UUID isEqual:[CBUUID UUIDWithString:KServiceUUID]])
         {
@@ -130,7 +146,7 @@ static NSString* const KCharacteristicWriteableUUID = @"828EE34B-7521-4A38-AA32-
 {
     if(error)
     {
-        self.console.text = [NSString stringWithFormat:@"%@\n%@ %@", self.console.text, @"Error discovering characteristic: ", [error localizedDescription]];
+        //self.console.text = [NSString stringWithFormat:@"%@\n%@ %@", self.console.text, @"Error discovering characteristic: ", [error localizedDescription]];
         NSLog(@"Error discovering characteristic: %@", [error localizedDescription]);
         return;
     }
@@ -144,13 +160,13 @@ static NSString* const KCharacteristicWriteableUUID = @"828EE34B-7521-4A38-AA32-
             
             if([characteristic.UUID isEqual:[CBUUID UUIDWithString:KCharacteristicReadableUUID]])
             {
-                self.console.text = [NSString stringWithFormat:@"%@\n%@", self.console.text, @"Discovered READABLE characteristic."];
+                //self.console.text = [NSString stringWithFormat:@"%@\n%@", self.console.text, @"Discovered READABLE characteristic."];
                 self.peripheralCharacteristic = characteristic;
                 [peripheral setNotifyValue:YES forCharacteristic:self.peripheralCharacteristic];
             }
             else if([characteristic.UUID isEqual:[CBUUID UUIDWithString:KCharacteristicWriteableUUID]])
             {
-                self.console.text = [NSString stringWithFormat:@"%@\n%@", self.console.text, @"Discovered WRITABLE characteristic."];
+                //self.console.text = [NSString stringWithFormat:@"%@\n%@", self.console.text, @"Discovered WRITABLE characteristic."];
                 self.writebackCharacteristic = characteristic;
                 [peripheral setNotifyValue:YES forCharacteristic:self.writebackCharacteristic];
             }
@@ -162,7 +178,7 @@ static NSString* const KCharacteristicWriteableUUID = @"828EE34B-7521-4A38-AA32-
 {
     if(error)
     {
-        self.console.text = [NSString stringWithFormat:@"%@\n%@ %@", self.console.text, @"Error changing notification state: ", [error localizedDescription]];
+        //self.console.text = [NSString stringWithFormat:@"%@\n%@ %@", self.console.text, @"Error changing notification state: ", [error localizedDescription]];
         NSLog(@"Error changing notification state: %@", [error localizedDescription]);
         return;
     }
@@ -174,13 +190,13 @@ static NSString* const KCharacteristicWriteableUUID = @"828EE34B-7521-4A38-AA32-
     
     if(characteristic.isNotifying)
     {
-        self.console.text = [NSString stringWithFormat:@"%@\n%@ %@", self.console.text, @"Notification began on ", characteristic];
+        //self.console.text = [NSString stringWithFormat:@"%@\n%@ %@", self.console.text, @"Notification began on ", characteristic];
         NSLog(@"Notification began on %@", characteristic);
         [peripheral readValueForCharacteristic:characteristic];
     }
     else
     {
-        self.console.text = [NSString stringWithFormat:@"%@\n%@ %@", self.console.text, @"Notification stopped on ", characteristic];
+        //self.console.text = [NSString stringWithFormat:@"%@\n%@ %@", self.console.text, @"Notification stopped on ", characteristic];
         NSLog(@"Notification has stopped on %@", characteristic);
         [self.manager cancelPeripheralConnection:self.peripheral];
     }
@@ -191,13 +207,13 @@ static NSString* const KCharacteristicWriteableUUID = @"828EE34B-7521-4A38-AA32-
 {
     if(error)
     {
-        self.console.text = [NSString stringWithFormat:@"%@\n%@", self.console.text, @"Error reading updated characteristic value: ", [error localizedDescription]];
+        //self.console.text = [NSString stringWithFormat:@"%@\n%@", self.console.text, @"Error reading updated characteristic value: ", [error localizedDescription]];
         NSLog(@"Error reading updated characteristic value: %@", [error localizedDescription]);
         return;
     }
     
     NSString *stringFromData = [[NSString alloc] initWithData:characteristic.value encoding:NSUTF8StringEncoding];
-    self.console.text = [NSString stringWithFormat:@"%@\n%@ %@", self.console.text, @"Received data: ", stringFromData];
+    self.console.text = [NSString stringWithFormat:@"%@\n%@ %@", self.console.text, @"[In]: ", stringFromData];
     NSLog(@"I got some data: %@", stringFromData);
 }
 

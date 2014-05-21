@@ -34,7 +34,7 @@
                                 </connections>
                             </button>
                             <textView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" fixedFrame="YES" showsHorizontalScrollIndicator="NO" editable="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Hhe-z7-QJN">
-                                <rect key="frame" x="32" y="125" width="704" height="812"/>
+                                <rect key="frame" x="32" y="154" width="704" height="783"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                 <color key="backgroundColor" red="1" green="0.97560421630282201" blue="0.85367857020347437" alpha="1" colorSpace="calibratedRGB"/>
                                 <fontDescription key="fontDescription" type="system" pointSize="16"/>
@@ -60,6 +60,13 @@
                                     <action selector="stopAdvertisingClicked:" destination="BYZ-38-t0r" eventType="touchUpInside" id="2tZ-cB-SW5"/>
                                 </connections>
                             </button>
+                            <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="Not Connected" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Jkm-Lz-nay">
+                                <rect key="frame" x="32" y="125" width="704" height="21"/>
+                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                <color key="textColor" cocoaTouchSystemColor="darkTextColor"/>
+                                <nil key="highlightedColor"/>
+                            </label>
                         </subviews>
                         <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="calibratedWhite"/>
                     </view>
@@ -67,6 +74,7 @@
                         <outlet property="console" destination="Hhe-z7-QJN" id="Jt7-lX-Rdy"/>
                         <outlet property="message" destination="uik-vB-Gzk" id="zTM-hM-c9Y"/>
                         <outlet property="send" destination="q76-si-0Np" id="m1O-EE-lHx"/>
+                        <outlet property="status" destination="Jkm-Lz-nay" id="wTY-7f-9VB"/>
                         <outlet property="stop_advertising" destination="QaQ-31-xky" id="wlP-7H-cyk"/>
                     </connections>
                 </viewController>

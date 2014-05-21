@@ -13,6 +13,7 @@
 @property (weak, nonatomic) IBOutlet UITextField *message;
 @property (weak, nonatomic) IBOutlet UIButton *send;
 @property (weak, nonatomic) IBOutlet UIButton *stop_advertising;
+@property (weak, nonatomic) IBOutlet UILabel *status;
 
 @end
 
@@ -23,16 +24,12 @@ static NSString* const KCharacteristicReadableUUID = @"EC0D2E22-3C43-45BB-9F4A-1
 static NSString* const KCharacteristicWriteableUUID = @"828EE34B-7521-4A38-AA32-B64F97789FAF";
 CBMutableCharacteristic *customCharacteristic;
 CBMutableCharacteristic *writebackCharacteristic;
-NSDate *now;
-NSDateFormatter *dateFormatter;
 
 - (void)viewDidLoad
 {
     [super viewDidLoad];
 	// Do any additional setup after loading the view, typically from a nib.
     self.manager = [[CBPeripheralManager alloc] initWithDelegate:self queue:nil];
-    dateFormatter = [[NSDateFormatter alloc] init];
-    [dateFormatter setDateFormat:@"HH:mm:ss"];
 }
 
 - (void)didReceiveMemoryWarning
@@ -43,18 +40,16 @@ NSDateFormatter *dateFormatter;
 
 - (void)peripheralManagerDidUpdateState:(CBPeripheralManager *)peripheral
 {
-    now = [[NSDate alloc] init];
-    
     switch(peripheral.state)
     {
         case CBPeripheralManagerStatePoweredOn:
-            self.console.text = [NSString stringWithFormat:@"%@\n%@", self.console.text, @"Advertising..."];
+            //self.console.text = [NSString stringWithFormat:@"%@\n%@", self.console.text, @"Advertising..."];
             NSLog(@"Advertising...");
             [self setupService];
             break;
         default:
             NSLog(@"Bluetooth LE unsupported.");
-            self.console.text = [NSString stringWithFormat:@"%@\n%@", self.console.text, @"Bluetooth LE is unsupported."];
+            //self.console.text = [NSString stringWithFormat:@"%@\n%@", self.console.text, @"Bluetooth LE is unsupported."];
             break;
     }
     
@@ -66,7 +61,7 @@ NSDateFormatter *dateFormatter;
     customCharacteristic = [[CBMutableCharacteristic alloc] initWithType:characteristicUUID properties:CBCharacteristicPropertyNotify value:nil permissions:CBAttributePermissionsReadable];
     
     CBUUID *writebackUUID = [CBUUID UUIDWithString:KCharacteristicWriteableUUID];
-    writebackCharacteristic = [[CBMutableCharacteristic alloc] initWithType:writebackUUID properties:CBCharacteristicPropertyNotify value:nil permissions:CBAttributePermissionsWriteable];
+    writebackCharacteristic = [[CBMutableCharacteristic alloc] initWithType:writebackUUID properties:CBCharacteristicPropertyWrite|CBCharacteristicPropertyNotify value:nil permissions:CBAttributePermissionsWriteable];
     
     CBUUID *serviceUUID = [CBUUID UUIDWithString:KServiceUUID];
     CBMutableService *customService = [[CBMutableService alloc] initWithType:serviceUUID primary:YES];
@@ -79,13 +74,13 @@ NSDateFormatter *dateFormatter;
 {
     if(error == nil)
     {
-        self.console.text = [NSString stringWithFormat:@"%@\n%@",  self.console.text, @"Beginning advertisement..."];
+        //self.console.text = [NSString stringWithFormat:@"%@\n%@",  self.console.text, @"Beginning advertisement..."];
         NSLog(@"Beginning advertisement...");
         [self.manager startAdvertising:@{CBAdvertisementDataLocalNameKey : @"SCD Peripheral", CBAdvertisementDataServiceUUIDsKey : @[[CBUUID UUIDWithString:KServiceUUID]]}];
     }
     else
     {
-        self.console.text = [NSString stringWithFormat:@"%@\n%@ %@",  self.console.text, @"Error: ", [error localizedDescription]];
+        //self.console.text = [NSString stringWithFormat:@"%@\n%@ %@",  self.console.text, @"Error: ", [error localizedDescription]];
         NSLog(@"Error: %@", [error localizedDescription]);
         
     }
@@ -94,7 +89,8 @@ NSDateFormatter *dateFormatter;
 - (void)peripheralManager:(CBPeripheralManager*)peripheral central:(CBCentral *)central didSubscribeToCharacteristic:(CBCharacteristic *)characteristic
 {
     NSLog(@"Someone subscribed to my characteristic: %@", [central description]);
-    self.console.text = [NSString stringWithFormat:@"%@\n%@ %@",  self.console.text, @"Someone subscribed to my characteristic!", [central description]];
+    self.status.text = [NSString stringWithFormat:@"Connected to %@", [central.identifier UUIDString]];
+    //self.console.text = [NSString stringWithFormat:@"%@\n%@ %@",  self.console.text, @"Someone subscribed to my characteristic: ", [characteristic UUID]];
 }
 
 - (IBAction)sendClicked:(id)sender
@@ -113,14 +109,15 @@ NSDateFormatter *dateFormatter;
         [self.manager stopAdvertising];
         [self.stop_advertising setTitle:@"Start Advertising" forState:UIControlStateNormal];
         [self.stop_advertising setBackgroundColor:[UIColor greenColor]];
-        self.console.text = [NSString stringWithFormat:@"%@\n%@", self.console.text, @"Stopped advertising."];
+        //self.console.text = [NSString stringWithFormat:@"%@\n%@", self.console.text, @"Stopped advertising."];
     }
     else
     {
         [self setupService];
         [self.stop_advertising setTitle:@"Stop Advertising" forState:UIControlStateNormal];
         [self.stop_advertising setBackgroundColor:[UIColor redColor]];
-        self.console.text = [NSString stringWithFormat:@"%@\n%@", self.console.text, @"Advertising..."];
+        self.console.text = @"";
+        //self.console.text = [NSString stringWithFormat:@"%@\n%@", self.console.text, @"Advertising..."];
     }
 }
 
@@ -132,40 +129,32 @@ NSDateFormatter *dateFormatter;
     
     if(didSend)
     {
-        self.console.text = [NSString stringWithFormat:@"%@\n%@ %@", self.console.text, @"Sent data:", self.message.text];
+        self.console.text = [NSString stringWithFormat:@"%@\n%@ %@", self.console.text, @"[Out]:", self.message.text];
         NSLog(@"Okay! I sent some data!");
     }
 }
 
 - (void)peripheralManager:(CBPeripheralManager*)peripheral central:(CBCentral *)central didUnsubscribeFromCharacteristic:(CBCharacteristic *)characteristic
 {
-    self.console.text = [NSString stringWithFormat:@"%@\n%@", self.console.text, @"Someone unsubscribed from my characteristic..."];
+    //self.console.text = [NSString stringWithFormat:@"%@\n%@", self.console.text, @"Someone unsubscribed from my characteristic..."];
+    [self.status setText:@"Not Connected"];
     NSLog(@"Someone unsubscribed from my characteristic...");
 }
 
+
 - (void)peripheralManager:(CBPeripheralManager*)peripheral didReceiveWriteRequests:(NSArray *)requests
 {
-    self.console.text = [NSString stringWithFormat:@"%@\n%@", self.console.text, @"Received a request from Central."];
     NSLog(@"Received a request from Central.");
     
-    CBATTRequest *request = requests[0];
-    [peripheral respondToRequest:request withResult:0];
+    CBATTRequest *request = [requests objectAtIndex:0];
+    NSData *worth_a_shot = request.value;
+    NSString *stringFromData = [[NSString alloc] initWithData:worth_a_shot encoding:NSUTF8StringEncoding];
+    self.console.text = [NSString stringWithFormat:@"%@\n%@ %@", self.console.text, @"[In]: ", stringFromData];
+    NSLog(@"I got some data: %@", stringFromData);
+    
+    [self.manager respondToRequest:request withResult:CBATTErrorSuccess];
 }
 
-- (void)respondToRequest:(CBATTRequest*)request withResult:(CBATTError)result
-{
-    if(!result)
-    {
-        NSString *stringFromData = [[NSString alloc] initWithData:request.value encoding:NSUTF8StringEncoding];
-        self.console.text = [NSString stringWithFormat:@"%@\n%@ %@", self.console.text, @"Received data: ", stringFromData];
-        NSLog(@"I got some data: %@", stringFromData);
 
-    }
-    else
-    {
-        self.console.text = [NSString stringWithFormat:@"%@\n%@ %d", self.console.text, @"Error responding to request: ", result];
-        NSLog(@"Error responding to request: %d", result);
-    }
-}
 
 @end
