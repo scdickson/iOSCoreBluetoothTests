@@ -7,6 +7,7 @@
 //
 
 #import "ViewController.h"
+#define MTU 20
 
 @interface ViewController ()
 @property (weak, nonatomic) IBOutlet UITextView *console;
@@ -24,6 +25,9 @@ static NSString* const KCharacteristicReadableUUID = @"EC0D2E22-3C43-45BB-9F4A-1
 static NSString* const KCharacteristicWriteableUUID = @"828EE34B-7521-4A38-AA32-B64F97789FAF";
 CBMutableCharacteristic *customCharacteristic;
 CBMutableCharacteristic *writebackCharacteristic;
+BOOL firstRecv = YES;
+NSMutableData *recvData;
+
 
 - (void)viewDidLoad
 {
@@ -97,7 +101,10 @@ CBMutableCharacteristic *writebackCharacteristic;
 {
     if(self.message.text != nil)
     {
+        self.data = [self.message.text dataUsingEncoding:NSUTF8StringEncoding];
+        self.dataIndex = 0;
         [self sendData];
+        self.console.text = [NSString stringWithFormat:@"%@\n%@ %@", self.console.text, @"[Out]: ", self.message.text];
         self.message.text = @"";
     }
 }
@@ -123,15 +130,69 @@ CBMutableCharacteristic *writebackCharacteristic;
 
 - (void)sendData
 {
-    NSData *data = [self.message.text dataUsingEncoding:NSUTF8StringEncoding];
+    static BOOL sendEOM = NO;
     
-    BOOL didSend = [self.manager updateValue:data forCharacteristic:customCharacteristic onSubscribedCentrals:nil];
-    
-    if(didSend)
+    if(sendEOM)
     {
-        self.console.text = [NSString stringWithFormat:@"%@\n%@ %@", self.console.text, @"[Out]:", self.message.text];
-        NSLog(@"Okay! I sent some data!");
+        BOOL didSend = [self.manager updateValue:[@"EOM" dataUsingEncoding:NSUTF8StringEncoding] forCharacteristic:customCharacteristic onSubscribedCentrals:nil];
+        
+        if(didSend)
+        {
+            sendEOM = NO;
+        }
+        
+        return;
     }
+    
+    if(self.dataIndex >= self.data.length)
+    {
+        return;
+    }
+    
+    BOOL didSend = YES;
+    
+    while(didSend)
+    {
+        NSInteger sendAmt = self.data.length - self.dataIndex;
+        
+        if(sendAmt > MTU)
+        {
+            sendAmt = MTU;
+        }
+        
+        NSData *packet = [NSData dataWithBytes:self.data.bytes+self.dataIndex length:sendAmt];
+        didSend = [self.manager updateValue:packet forCharacteristic:customCharacteristic onSubscribedCentrals:nil];
+        
+        if(!didSend)
+        {
+            return;
+        }
+        
+        NSString *stringFromPacket = [[NSString alloc] initWithData:packet encoding:NSUTF8StringEncoding];
+        NSLog(@"Sent piece: %@", stringFromPacket);
+        
+        self.dataIndex += sendAmt;
+        
+        if(self.dataIndex >= self.data.length)
+        {
+            sendEOM = YES;
+            BOOL eomSent = [self.manager updateValue:[@"EOM" dataUsingEncoding:NSUTF8StringEncoding] forCharacteristic:customCharacteristic onSubscribedCentrals:nil];
+            
+            if(eomSent)
+            {
+                sendEOM = NO;
+                NSLog(@"Sent EOM");
+            }
+            
+            return;
+        }
+    }
+    
+}
+
+- (void)peripheralManagerIsReadyToUpdateSubscribers:(CBPeripheralManager *)peripheral
+{
+    [self sendData];
 }
 
 - (void)peripheralManager:(CBPeripheralManager*)peripheral central:(CBCentral *)central didUnsubscribeFromCharacteristic:(CBCharacteristic *)characteristic
@@ -147,10 +208,46 @@ CBMutableCharacteristic *writebackCharacteristic;
     NSLog(@"Received a request from Central.");
     
     CBATTRequest *request = [requests objectAtIndex:0];
-    NSData *worth_a_shot = request.value;
-    NSString *stringFromData = [[NSString alloc] initWithData:worth_a_shot encoding:NSUTF8StringEncoding];
-    self.console.text = [NSString stringWithFormat:@"%@\n%@ %@", self.console.text, @"[In]: ", stringFromData];
-    NSLog(@"I got some data: %@", stringFromData);
+    NSData *tmp = request.value;
+    NSString *stringFromData = [[NSString alloc] initWithData:tmp encoding:NSUTF8StringEncoding];
+    
+    /*if(firstRecv)
+    {
+        self.console.text = [NSString stringWithFormat:@"%@\n%@ %@", self.console.text, @"[In]: ", stringFromData];
+        firstRecv = NO;
+    }
+    else
+    {
+        self.console.text = [NSString stringWithFormat:@"%@%@", self.console.text, stringFromData];
+    }
+    
+    if([stringFromData isEqualToString:@"EOM"])
+    {
+        firstRecv = YES;
+    }
+    
+    NSLog(@"I got some data: %@", stringFromData);*/
+    
+    if([stringFromData isEqualToString:@"EOM"])
+    {
+        if(recvData != nil)
+        {
+            NSString *final = [[NSString alloc] initWithData:recvData encoding:NSUTF8StringEncoding];
+            self.console.text = [NSString stringWithFormat:@"%@\n%@ %@", self.console.text, @"[In]: ", final];
+        }
+    }
+    else
+    {
+        if(recvData == nil)
+        {
+            recvData = [[NSMutableData alloc] initWithData:tmp];
+        }
+        else
+        {
+            [recvData appendData:tmp];
+        }
+    }
+
     
     [self.manager respondToRequest:request withResult:CBATTErrorSuccess];
 }

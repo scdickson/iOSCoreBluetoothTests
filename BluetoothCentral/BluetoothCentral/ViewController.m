@@ -7,6 +7,7 @@
 //
 
 #import "ViewController.h"
+#define MTU 20
 
 @interface ViewController ()
 @property (weak, nonatomic) IBOutlet UITextField *message;
@@ -22,6 +23,8 @@
 static NSString* const KServiceUUID = @"DFE668D5-CE9A-4C72-86FE-3291242F7564";
 static NSString* const KCharacteristicReadableUUID = @"EC0D2E22-3C43-45BB-9F4A-169B8681F64B";
 static NSString* const KCharacteristicWriteableUUID = @"828EE34B-7521-4A38-AA32-B64F97789FAF";
+BOOL firstRecv = YES;
+NSMutableData *recvData;
 
 - (void)viewDidLoad
 {
@@ -54,14 +57,51 @@ static NSString* const KCharacteristicWriteableUUID = @"828EE34B-7521-4A38-AA32-
 
 - (IBAction)sendClicked:(id)sender
 {
-    NSData *data = [self.message.text dataUsingEncoding:NSUTF8StringEncoding];
+    /*NSData *data = [self.message.text dataUsingEncoding:NSUTF8StringEncoding];
     [self.peripheral writeValue:data forCharacteristic:self.writebackCharacteristic type:CBCharacteristicWriteWithResponse];
     self.console.text = [NSString stringWithFormat:@"%@\n%@ %@", self.console.text, @"[Out]:", self.message.text];
     NSLog(@"Okay! I sent some data!");
     self.message.text = @"";
-    //[self.view endEditing:YES];
+    //[self.view endEditing:YES];*/
     
+    self.data = [self.message.text dataUsingEncoding:NSUTF8StringEncoding];
+    self.dataIndex = 0;
+    [self sendData];
+    self.console.text = [NSString stringWithFormat:@"%@\n%@ %@", self.console.text, @"[Out]:", self.message.text];
+    self.message.text = @"";
 
+}
+
+- (void)sendData
+{
+    if(self.dataIndex >= self.data.length)
+    {
+        return;
+    }
+    
+    BOOL doneSending = NO;
+    
+    while(!doneSending)
+    {
+        NSInteger sendAmt = self.data.length - self.dataIndex;
+        
+        if(sendAmt > MTU)
+        {
+            sendAmt = MTU;
+        }
+        
+        NSData *packet = [NSData dataWithBytes:self.data.bytes+self.dataIndex length:sendAmt];
+        [self.peripheral writeValue:packet forCharacteristic:self.writebackCharacteristic type:CBCharacteristicWriteWithResponse];
+        
+        self.dataIndex += sendAmt;
+        
+        if(self.dataIndex >= self.data.length)
+        {
+            [self.peripheral writeValue:[@"EOM" dataUsingEncoding:NSUTF8StringEncoding] forCharacteristic:self.writebackCharacteristic type:CBCharacteristicWriteWithResponse];
+            doneSending = YES;
+            return;
+        }
+    }
 }
 
 - (IBAction)disconnectClicked:(id)sender
@@ -111,7 +151,7 @@ static NSString* const KCharacteristicWriteableUUID = @"828EE34B-7521-4A38-AA32-
 
 - (void)centralManager:(CBCentralManager*)central didConnectPeripheral:(CBPeripheral *)peripheral
 {
-    [self.data setLength:0];
+    //[self.data setLength:0];
     [self.peripheral setDelegate:self];
     //self.console.text = [NSString stringWithFormat:@"%@\n%@", self.console.text, @"Connected!"];
     [self.peripheral discoverServices:@[[CBUUID UUIDWithString:KServiceUUID]]];
@@ -212,9 +252,49 @@ static NSString* const KCharacteristicWriteableUUID = @"828EE34B-7521-4A38-AA32-
         return;
     }
     
+    /*NSString *stringFromData = [[NSString alloc] initWithData:characteristic.value encoding:NSUTF8StringEncoding];
+    
+    if(firstRecv)
+    {
+        self.console.text = [NSString stringWithFormat:@"%@\n%@ %@", self.console.text, @"[In]: ", stringFromData];
+        firstRecv = NO;
+    }
+    else
+    {
+        self.console.text = [NSString stringWithFormat:@"%@%@", self.console.text, stringFromData];
+    }
+    
+    if([stringFromData isEqualToString:@"EOM"])
+    {
+        //NSString *final = [[NSString alloc] initWithData:self.data encoding:NSUTF8StringEncoding];
+        //[_console setText:[_console.text stringByAppendingString:final]];
+        //self.console.text = [NSString stringWithFormat:@"%@\n%@ %@", self.console.text, @"[In]: ", stringFromData];
+        firstRecv = YES;
+    }
+    
+    NSLog(@"I got some data: %@", stringFromData);*/
+    
     NSString *stringFromData = [[NSString alloc] initWithData:characteristic.value encoding:NSUTF8StringEncoding];
-    self.console.text = [NSString stringWithFormat:@"%@\n%@ %@", self.console.text, @"[In]: ", stringFromData];
-    NSLog(@"I got some data: %@", stringFromData);
+    
+    if([stringFromData isEqualToString:@"EOM"])
+    {
+        if(recvData != nil)
+        {
+            NSString *final = [[NSString alloc] initWithData:recvData encoding:NSUTF8StringEncoding];
+            self.console.text = [NSString stringWithFormat:@"%@\n%@ %@", self.console.text, @"[In]: ", final];
+        }
+    }
+    else
+    {
+        if(recvData == nil)
+        {
+            recvData = [[NSMutableData alloc] initWithData:characteristic.value];
+        }
+        else
+        {
+            [recvData appendData:characteristic.value];
+        }
+    }
 }
 
 @end

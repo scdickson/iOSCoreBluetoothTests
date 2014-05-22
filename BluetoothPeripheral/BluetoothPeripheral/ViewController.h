@@ -11,4 +11,6 @@
 
 @interface ViewController : UIViewController <CBPeripheralManagerDelegate>
 @property (nonatomic, strong) CBPeripheralManager *manager;
+@property (nonatomic, readwrite) NSInteger dataIndex;
+@property (nonatomic, strong) NSData *data;
 @end

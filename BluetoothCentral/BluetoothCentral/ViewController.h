@@ -14,5 +14,6 @@
 @property (strong, nonatomic) CBPeripheral *peripheral;
 @property (strong, nonatomic) CBCharacteristic *peripheralCharacteristic;
 @property (strong, nonatomic) CBCharacteristic *writebackCharacteristic;
-@property (strong, nonatomic) NSMutableData *data;
+@property (nonatomic, readwrite) NSInteger dataIndex;
+@property (strong, nonatomic) NSData *data;
 @end
