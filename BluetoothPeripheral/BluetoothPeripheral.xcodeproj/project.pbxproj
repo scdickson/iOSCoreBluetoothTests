@@ -474,6 +474,7 @@
 				22720B8B192C02410011097F /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		22720B8C192C02410011097F /* Build configuration list for PBXNativeTarget "BluetoothPeripheralTests" */ = {
 			isa = XCConfigurationList;
@@ -482,6 +483,7 @@
 				22720B8E192C02410011097F /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
