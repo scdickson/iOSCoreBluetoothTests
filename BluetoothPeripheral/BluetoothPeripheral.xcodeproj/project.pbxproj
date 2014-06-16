@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		2225DB051947566500A3FBAD /* peripheral.png in Resources */ = {isa = PBXBuildFile; fileRef = 2225DB041947566500A3FBAD /* peripheral.png */; };
 		22720B58192C02400011097F /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 22720B57192C02400011097F /* Foundation.framework */; };
 		22720B5A192C02410011097F /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 22720B59192C02410011097F /* CoreGraphics.framework */; };
 		22720B5C192C02410011097F /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 22720B5B192C02410011097F /* UIKit.framework */; };
@@ -36,6 +37,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		2225DB041947566500A3FBAD /* peripheral.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = peripheral.png; path = ../peripheral.png; sourceTree = "<group>"; };
 		22720B54192C02400011097F /* BluetoothPeripheral.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BluetoothPeripheral.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		22720B57192C02400011097F /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		22720B59192C02410011097F /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
@@ -118,6 +120,7 @@
 		22720B5D192C02410011097F /* BluetoothPeripheral */ = {
 			isa = PBXGroup;
 			children = (
+				2225DB041947566500A3FBAD /* peripheral.png */,
 				22720B66192C02410011097F /* AppDelegate.h */,
 				22720B67192C02410011097F /* AppDelegate.m */,
 				22720B69192C02410011097F /* Main_iPhone.storyboard */,
@@ -236,6 +239,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				22720B6E192C02410011097F /* Main_iPad.storyboard in Resources */,
+				2225DB051947566500A3FBAD /* peripheral.png in Resources */,
 				22720B73192C02410011097F /* Images.xcassets in Resources */,
 				22720B6B192C02410011097F /* Main_iPhone.storyboard in Resources */,
 				22720B62192C02410011097F /* InfoPlist.strings in Resources */,
@@ -392,7 +396,6 @@
 		22720B8A192C02410011097F /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "BluetoothPeripheral/BluetoothPeripheral-Prefix.pch";
@@ -405,7 +408,6 @@
 		22720B8B192C02410011097F /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "BluetoothPeripheral/BluetoothPeripheral-Prefix.pch";
